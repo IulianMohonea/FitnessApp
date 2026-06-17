@@ -41,7 +41,10 @@ import androidx.compose.ui.unit.dp
 import com.fitnessapp.ui.theme.FitnessAppTheme
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+fun HomeScreen(
+    username: String = "guest",
+    modifier: Modifier = Modifier
+) {
     var selectedFocus by remember { mutableStateOf("Strength") }
     val exercises = remember {
         listOf(
@@ -62,7 +65,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                HomeHeader()
+                HomeHeader(username = username)
             }
 
             item {
@@ -100,10 +103,10 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun HomeHeader() {
+private fun HomeHeader(username: String) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "Welcome back",
+            text = "Welcome back, $username",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary
         )
