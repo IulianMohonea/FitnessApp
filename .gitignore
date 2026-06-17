@@ -1,0 +1,39 @@
+# Local Codex memory
+AGENTS.md
+
+# Markdown files
+*.md
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.hprof
+
+# Kotlin
+.kotlin/
+*.class
+out/
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Android build artifacts
+*.apk
+*.ap_
+*.aab
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration and secrets
+local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
+Thumbs.db
