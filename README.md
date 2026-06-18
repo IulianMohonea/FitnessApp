@@ -2,4 +2,5 @@
 
 Proiect Android
 
-Descriere proiect:
+Descriere proiect: APLICATIE ANDROID
+
