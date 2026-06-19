@@ -95,6 +95,33 @@ class AuthRepository(context: Context) {
         }
     }
 
+    fun findUserById(userId: Long): User? {
+        if (userId <= 0L) return null
+
+        val db = databaseHelper.readableDatabase
+        val cursor = db.query(
+            USERS_TABLE,
+            arrayOf(USER_ID, USER_NAME, USER_USERNAME, USER_EMAIL),
+            "$USER_ID = ?",
+            arrayOf(userId.toString()),
+            null,
+            null,
+            null,
+            "1"
+        )
+
+        cursor.use {
+            if (!it.moveToFirst()) return null
+
+            return User(
+                id = it.getLong(it.getColumnIndexOrThrow(USER_ID)),
+                name = it.getString(it.getColumnIndexOrThrow(USER_NAME)),
+                username = it.getString(it.getColumnIndexOrThrow(USER_USERNAME)),
+                email = it.getString(it.getColumnIndexOrThrow(USER_EMAIL))
+            )
+        }
+    }
+
     private fun findUserByUsername(username: String): User? {
         val db = databaseHelper.readableDatabase
         val cursor = db.query(
