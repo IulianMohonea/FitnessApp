@@ -37,6 +37,7 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.4.0")
     implementation("androidx.compose.ui:ui:1.10.4")
     implementation("androidx.compose.ui:ui-tooling-preview:1.10.4")
+    implementation("androidx.navigation:navigation-compose:2.8.9")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     debugImplementation("androidx.compose.ui:ui-tooling:1.10.4")
 }

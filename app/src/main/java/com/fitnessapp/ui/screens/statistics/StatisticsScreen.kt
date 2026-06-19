@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,27 +31,47 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.fitnessapp.data.local.model.ExerciseHistoryRecord
+import com.fitnessapp.data.remote.model.ExerciseDifficulty
 import com.fitnessapp.ui.theme.FitnessAppTheme
 
 @Composable
 fun StatisticsScreen(
+    historyRecords: List<ExerciseHistoryRecord>,
+    isLoading: Boolean,
+    weeklyGoal: Int,
+    selectedDifficulty: ExerciseDifficulty,
+    availableDifficulties: List<ExerciseDifficulty>,
+    onDifficultySelected: (ExerciseDifficulty) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val weeklyStats = remember {
-        listOf(
-            StatisticSummary("Workouts", "5", "+2 this week", Color(0xFF1F8A5B)),
-            StatisticSummary("Minutes", "142", "28 min average", Color(0xFF2E6FAD)),
-            StatisticSummary("Calories", "1,480", "Estimated burn", Color(0xFFE89B2D))
+    val stats = remember(historyRecords, weeklyGoal, selectedDifficulty) {
+        WorkoutStats.from(
+            historyRecords = historyRecords,
+            weeklyGoal = weeklyGoal,
+            selectedDifficulty = selectedDifficulty
         )
     }
-    val focusStats = remember {
-        listOf(
-            FocusProgress("Strength", 0.78f, "7 sessions"),
-            FocusProgress("Cardio", 0.52f, "4 sessions"),
-            FocusProgress("Core", 0.36f, "3 sessions"),
-            FocusProgress("Mobility", 0.24f, "2 sessions")
+    val weeklyStats = listOf(
+        StatisticSummary(
+            label = "Workouts",
+            value = stats.weeklyWorkouts.toString(),
+            note = "${stats.totalWorkouts} total",
+            color = MaterialTheme.colorScheme.primary
+        ),
+        StatisticSummary(
+            label = "Minutes",
+            value = stats.weeklyMinutes.toString(),
+            note = "${stats.totalMinutes} total",
+            color = MaterialTheme.colorScheme.tertiary
+        ),
+        StatisticSummary(
+            label = "Calories",
+            value = stats.weeklyCalories.toString(),
+            note = "${stats.totalCalories} total",
+            color = MaterialTheme.colorScheme.secondary
         )
-    }
+    )
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -66,6 +87,20 @@ fun StatisticsScreen(
             }
 
             item {
+                DifficultySelector(
+                    selectedDifficulty = selectedDifficulty,
+                    availableDifficulties = availableDifficulties,
+                    onDifficultySelected = onDifficultySelected
+                )
+            }
+
+            if (isLoading) {
+                item {
+                    StatisticsStatusCard(message = "Loading workout statistics...")
+                }
+            }
+
+            item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(weeklyStats) { stat ->
                         StatisticCard(stat = stat)
@@ -74,7 +109,17 @@ fun StatisticsScreen(
             }
 
             item {
-                WeeklyGoalCard()
+                WeeklyGoalCard(
+                    completedWorkouts = stats.weeklyWorkouts,
+                    weeklyGoal = weeklyGoal
+                )
+            }
+
+            item {
+                GraduationProgressCard(
+                    selectedDifficulty = selectedDifficulty,
+                    completedExercises = stats.completedForDifficulty
+                )
             }
 
             item {
@@ -85,8 +130,40 @@ fun StatisticsScreen(
                 )
             }
 
-            items(focusStats) { stat ->
-                FocusProgressRow(progress = stat)
+            if (stats.focusProgress.isEmpty() && !isLoading) {
+                item {
+                    StatisticsStatusCard(
+                        message = "No workout categories yet. Completed workouts will appear here."
+                    )
+                }
+            } else {
+                items(stats.focusProgress) { stat ->
+                    FocusProgressRow(progress = stat)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DifficultySelector(
+    selectedDifficulty: ExerciseDifficulty,
+    availableDifficulties: List<ExerciseDifficulty>,
+    onDifficultySelected: (ExerciseDifficulty) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Training level",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(availableDifficulties) { difficulty ->
+                FilterChip(
+                    selected = selectedDifficulty == difficulty,
+                    onClick = { onDifficultySelected(difficulty) },
+                    label = { Text(text = difficulty.displayName) }
+                )
             }
         }
     }
@@ -101,7 +178,7 @@ private fun StatisticsHeader() {
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = "A quick overview of your weekly workout progress.",
+            text = "A quick overview calculated from your saved workout history.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -146,7 +223,16 @@ private fun StatisticCard(stat: StatisticSummary) {
 }
 
 @Composable
-private fun WeeklyGoalCard() {
+private fun WeeklyGoalCard(
+    completedWorkouts: Int,
+    weeklyGoal: Int
+) {
+    val progress = if (weeklyGoal <= 0) {
+        0f
+    } else {
+        completedWorkouts.toFloat() / weeklyGoal.toFloat()
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -162,20 +248,68 @@ private fun WeeklyGoalCard() {
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f)
             )
             Text(
-                text = "5 of 7 workouts completed",
+                text = "$completedWorkouts of $weeklyGoal workouts completed",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary
             )
             ProgressBar(
-                progress = 0.72f,
+                progress = progress,
                 activeColor = MaterialTheme.colorScheme.onPrimary,
                 trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.24f)
             )
             Text(
-                text = "Two more sessions will finish the week strong.",
+                text = if (completedWorkouts >= weeklyGoal) {
+                    "Weekly goal completed. Nice consistency."
+                } else {
+                    "${weeklyGoal - completedWorkouts} more sessions to finish the week."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun GraduationProgressCard(
+    selectedDifficulty: ExerciseDifficulty,
+    completedExercises: Int
+) {
+    val progress = completedExercises.toFloat() / ExerciseDifficulty.GRADUATION_GOAL.toFloat()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "${selectedDifficulty.displayName} graduation",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "$completedExercises of ${ExerciseDifficulty.GRADUATION_GOAL} exercises completed",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            ProgressBar(
+                progress = progress,
+                activeColor = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+            Text(
+                text = if (completedExercises >= ExerciseDifficulty.GRADUATION_GOAL) {
+                    "Level completed. You are ready to graduate."
+                } else {
+                    "${ExerciseDifficulty.GRADUATION_GOAL - completedExercises} more exercises to graduate."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -203,7 +337,7 @@ private fun FocusProgressRow(progress: FocusProgress) {
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = progress.detail,
+                    text = "${progress.sessions} sessions - ${progress.totalMinutes} min",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -214,6 +348,22 @@ private fun FocusProgressRow(progress: FocusProgress) {
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun StatisticsStatusCard(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(16.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -240,6 +390,60 @@ private fun ProgressBar(
     }
 }
 
+private data class WorkoutStats(
+    val totalWorkouts: Int,
+    val totalMinutes: Int,
+    val totalCalories: Int,
+    val weeklyWorkouts: Int,
+    val weeklyMinutes: Int,
+    val weeklyCalories: Int,
+    val completedForDifficulty: Int,
+    val focusProgress: List<FocusProgress>
+) {
+    companion object {
+        fun from(
+            historyRecords: List<ExerciseHistoryRecord>,
+            weeklyGoal: Int,
+            selectedDifficulty: ExerciseDifficulty
+        ): WorkoutStats {
+            val weekStart = System.currentTimeMillis() - WEEK_IN_MILLIS
+            val weeklyRecords = historyRecords.filter { record ->
+                record.completedAt >= weekStart
+            }
+            val groupedByCategory = historyRecords.groupBy { record ->
+                record.category
+            }
+            val maxCategorySessions = groupedByCategory.values.maxOfOrNull { records ->
+                records.size
+            } ?: 0
+            val normalizedGoal = weeklyGoal.coerceAtLeast(1)
+
+            return WorkoutStats(
+                totalWorkouts = historyRecords.size,
+                totalMinutes = historyRecords.sumOf { record -> record.durationMinutes },
+                totalCalories = historyRecords.sumOf { record -> record.caloriesBurned },
+                weeklyWorkouts = weeklyRecords.size,
+                weeklyMinutes = weeklyRecords.sumOf { record -> record.durationMinutes },
+                weeklyCalories = weeklyRecords.sumOf { record -> record.caloriesBurned },
+                completedForDifficulty = historyRecords.count { record ->
+                    selectedDifficulty.matches(record.level)
+                },
+                focusProgress = groupedByCategory.map { (category, records) ->
+                    FocusProgress(
+                        name = category,
+                        sessions = records.size,
+                        totalMinutes = records.sumOf { record -> record.durationMinutes },
+                        progress = records.size.toFloat() /
+                            maxCategorySessions.coerceAtLeast(normalizedGoal).toFloat()
+                    )
+                }.sortedByDescending { progress -> progress.sessions }
+            )
+        }
+
+        private const val WEEK_IN_MILLIS = 7L * 24L * 60L * 60L * 1000L
+    }
+}
+
 private data class StatisticSummary(
     val label: String,
     val value: String,
@@ -249,14 +453,34 @@ private data class StatisticSummary(
 
 private data class FocusProgress(
     val name: String,
-    val progress: Float,
-    val detail: String
+    val sessions: Int,
+    val totalMinutes: Int,
+    val progress: Float
 )
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun StatisticsScreenPreview() {
     FitnessAppTheme {
-        StatisticsScreen()
+        StatisticsScreen(
+            historyRecords = listOf(
+                ExerciseHistoryRecord(
+                    id = 1L,
+                    userId = 1L,
+                    name = "Bodyweight Squats",
+                    category = "Strength",
+                    level = "Beginner",
+                    summary = "3 sets x 12 reps",
+                    durationMinutes = 18,
+                    caloriesBurned = 120,
+                    completedAt = System.currentTimeMillis()
+                )
+            ),
+            isLoading = false,
+            weeklyGoal = 7,
+            selectedDifficulty = ExerciseDifficulty.Beginner,
+            availableDifficulties = listOf(ExerciseDifficulty.Beginner),
+            onDifficultySelected = {}
+        )
     }
 }
