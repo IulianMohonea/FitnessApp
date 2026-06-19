@@ -1,6 +1,12 @@
 package com.fitnessapp.ui.screens.main
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
@@ -9,9 +15,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,6 +51,7 @@ import kotlinx.coroutines.withContext
 fun MainScreen(
     username: String,
     userId: Long,
+    onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -161,46 +174,98 @@ fun MainScreen(
             )
         }
     ) { innerPadding ->
-        val contentModifier = Modifier.padding(innerPadding)
-
-        NavHost(
-            navController = navController,
-            startDestination = startTab.route,
-            modifier = contentModifier
+        Box(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
         ) {
-            composable(MainTab.Statistics.route) {
-                StatisticsScreen(
-                    historyRecords = historyRecords,
-                    isLoading = isHistoryLoading,
-                    weeklyGoal = weeklyGoal,
-                    selectedDifficulty = activeDifficulty,
-                    availableDifficulties = availableDifficulties,
-                    onDifficultySelected = ::selectDifficulty
-                )
+            NavHost(
+                navController = navController,
+                startDestination = startTab.route,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(MainTab.Statistics.route) {
+                    StatisticsScreen(
+                        historyRecords = historyRecords,
+                        isLoading = isHistoryLoading,
+                        weeklyGoal = weeklyGoal,
+                        selectedDifficulty = activeDifficulty,
+                        availableDifficulties = availableDifficulties,
+                        onDifficultySelected = ::selectDifficulty
+                    )
+                }
+
+                composable(MainTab.Home.route) {
+                    HomeScreen(
+                        username = username,
+                        historyRecords = historyRecords,
+                        isHistoryLoading = isHistoryLoading,
+                        selectedDifficulty = activeDifficulty,
+                        remoteExercises = remoteExercises,
+                        isRemoteLoading = isRemoteLoading,
+                        remoteErrorMessage = remoteErrorMessage,
+                        onChallengeCompleted = ::logCompletedChallenge
+                    )
+                }
+
+                composable(MainTab.History.route) {
+                    ExerciseHistoryScreen(
+                        historyItems = historyRecords,
+                        isLoading = isHistoryLoading
+                    )
+                }
             }
 
-            composable(MainTab.Home.route) {
-                HomeScreen(
-                    username = username,
-                    historyRecords = historyRecords,
-                    isHistoryLoading = isHistoryLoading,
-                    selectedDifficulty = activeDifficulty,
-                    remoteExercises = remoteExercises,
-                    isRemoteLoading = isRemoteLoading,
-                    remoteErrorMessage = remoteErrorMessage,
-                    onChallengeCompleted = ::logCompletedChallenge
-                )
-            }
-
-            composable(MainTab.History.route) {
-                ExerciseHistoryScreen(
-                    historyItems = historyRecords,
-                    isLoading = isHistoryLoading
+            IconButton(
+                onClick = onLogoutClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(top = 6.dp, end = 10.dp)
+                    .size(48.dp)
+            ) {
+                Icon(
+                    imageVector = LogoutIcon,
+                    contentDescription = "Logout",
+                    tint = Color.Black
                 )
             }
         }
     }
 }
+
+private val LogoutIcon: ImageVector = ImageVector.Builder(
+    name = "Logout",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f
+).apply {
+    path(fill = SolidColor(Color.Black)) {
+        moveTo(17f, 7f)
+        lineToRelative(-1.41f, 1.41f)
+        lineTo(18.17f, 11f)
+        horizontalLineTo(8f)
+        verticalLineToRelative(2f)
+        horizontalLineToRelative(10.17f)
+        lineToRelative(-2.58f, 2.58f)
+        lineTo(17f, 17f)
+        lineToRelative(5f, -5f)
+        close()
+
+        moveTo(4f, 5f)
+        horizontalLineToRelative(8f)
+        verticalLineTo(3f)
+        horizontalLineTo(4f)
+        curveTo(2.9f, 3f, 2f, 3.9f, 2f, 5f)
+        verticalLineToRelative(14f)
+        curveToRelative(0f, 1.1f, 0.9f, 2f, 2f, 2f)
+        horizontalLineToRelative(8f)
+        verticalLineToRelative(-2f)
+        horizontalLineTo(4f)
+        close()
+    }
+}.build()
 
 private fun String?.toMainTab(): MainTab {
     return MainTab.entries.firstOrNull { tab ->
@@ -235,7 +300,8 @@ private fun MainScreenPreview() {
     FitnessAppTheme {
         MainScreen(
             username = "alex",
-            userId = 1L
+            userId = 1L,
+            onLogoutClick = {}
         )
     }
 }

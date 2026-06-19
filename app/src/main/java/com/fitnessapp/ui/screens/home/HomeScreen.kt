@@ -1,6 +1,7 @@
 package com.fitnessapp.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -470,11 +478,9 @@ private fun ChallengeRow(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = challenge.name.first().toString(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                    ExerciseCategoryIcon(
+                        category = challenge.category,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
@@ -512,6 +518,258 @@ private fun ChallengeRow(
             }
         }
     }
+}
+
+@Composable
+private fun ExerciseCategoryIcon(
+    category: String,
+    modifier: Modifier = Modifier
+) {
+    val iconColor = MaterialTheme.colorScheme.primary
+    val normalizedCategory = category.lowercase()
+
+    Canvas(
+        modifier = modifier.semantics {
+            contentDescription = "$category exercise icon"
+        }
+    ) {
+        when {
+            "strength" in normalizedCategory -> drawMuscleIcon(color = iconColor)
+            "stretch" in normalizedCategory -> drawStretchIcon(color = iconColor)
+            "cardio" in normalizedCategory -> drawHeartIcon(color = iconColor)
+            "plyometric" in normalizedCategory -> drawJumpIcon(color = iconColor)
+            "lifting" in normalizedCategory ||
+                "powerlifting" in normalizedCategory ||
+                "strongman" in normalizedCategory -> drawBarbellIcon(color = iconColor)
+            else -> drawActivityIcon(color = iconColor)
+        }
+    }
+}
+
+private fun DrawScope.drawMuscleIcon(color: Color) {
+    val strokeWidth = size.minDimension * 0.12f
+
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.18f, size.height * 0.66f),
+        end = Offset(size.width * 0.4f, size.height * 0.48f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.4f, size.height * 0.48f),
+        end = Offset(size.width * 0.61f, size.height * 0.58f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawCircle(
+        color = color,
+        radius = size.minDimension * 0.12f,
+        center = Offset(size.width * 0.72f, size.height * 0.58f)
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.34f, size.height * 0.59f),
+        end = Offset(size.width * 0.5f, size.height * 0.78f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.78f),
+        end = Offset(size.width * 0.72f, size.height * 0.76f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+}
+
+private fun DrawScope.drawStretchIcon(color: Color) {
+    val strokeWidth = size.minDimension * 0.1f
+
+    drawCircle(
+        color = color,
+        radius = size.minDimension * 0.09f,
+        center = Offset(size.width * 0.5f, size.height * 0.18f)
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.29f),
+        end = Offset(size.width * 0.5f, size.height * 0.55f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.38f),
+        end = Offset(size.width * 0.22f, size.height * 0.48f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.55f),
+        end = Offset(size.width * 0.24f, size.height * 0.83f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.55f),
+        end = Offset(size.width * 0.82f, size.height * 0.74f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+}
+
+private fun DrawScope.drawHeartIcon(color: Color) {
+    val heartPath = Path().apply {
+        moveTo(size.width * 0.5f, size.height * 0.8f)
+        cubicTo(
+            size.width * 0.2f,
+            size.height * 0.58f,
+            size.width * 0.12f,
+            size.height * 0.42f,
+            size.width * 0.23f,
+            size.height * 0.28f
+        )
+        cubicTo(
+            size.width * 0.34f,
+            size.height * 0.15f,
+            size.width * 0.47f,
+            size.height * 0.22f,
+            size.width * 0.5f,
+            size.height * 0.35f
+        )
+        cubicTo(
+            size.width * 0.53f,
+            size.height * 0.22f,
+            size.width * 0.66f,
+            size.height * 0.15f,
+            size.width * 0.77f,
+            size.height * 0.28f
+        )
+        cubicTo(
+            size.width * 0.88f,
+            size.height * 0.42f,
+            size.width * 0.8f,
+            size.height * 0.58f,
+            size.width * 0.5f,
+            size.height * 0.8f
+        )
+        close()
+    }
+
+    drawPath(path = heartPath, color = color)
+}
+
+private fun DrawScope.drawJumpIcon(color: Color) {
+    val strokeWidth = size.minDimension * 0.11f
+
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.22f, size.height * 0.78f),
+        end = Offset(size.width * 0.5f, size.height * 0.25f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.25f),
+        end = Offset(size.width * 0.78f, size.height * 0.78f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.25f),
+        end = Offset(size.width * 0.36f, size.height * 0.37f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.5f, size.height * 0.25f),
+        end = Offset(size.width * 0.64f, size.height * 0.37f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+}
+
+private fun DrawScope.drawBarbellIcon(color: Color) {
+    val strokeWidth = size.minDimension * 0.09f
+
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.16f, size.height * 0.5f),
+        end = Offset(size.width * 0.84f, size.height * 0.5f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.1f, size.height * 0.28f),
+        size = Size(size.width * 0.14f, size.height * 0.44f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.28f, size.height * 0.34f),
+        size = Size(size.width * 0.1f, size.height * 0.32f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.62f, size.height * 0.34f),
+        size = Size(size.width * 0.1f, size.height * 0.32f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+    )
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(size.width * 0.76f, size.height * 0.28f),
+        size = Size(size.width * 0.14f, size.height * 0.44f),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx())
+    )
+}
+
+private fun DrawScope.drawActivityIcon(color: Color) {
+    val strokeWidth = size.minDimension * 0.1f
+
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.12f, size.height * 0.58f),
+        end = Offset(size.width * 0.32f, size.height * 0.58f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.32f, size.height * 0.58f),
+        end = Offset(size.width * 0.43f, size.height * 0.33f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.43f, size.height * 0.33f),
+        end = Offset(size.width * 0.58f, size.height * 0.76f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.58f, size.height * 0.76f),
+        end = Offset(size.width * 0.7f, size.height * 0.5f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
+    drawLine(
+        color = color,
+        start = Offset(size.width * 0.7f, size.height * 0.5f),
+        end = Offset(size.width * 0.88f, size.height * 0.5f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round
+    )
 }
 
 @Composable

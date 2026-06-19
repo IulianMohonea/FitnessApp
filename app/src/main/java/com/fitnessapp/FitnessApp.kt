@@ -153,7 +153,16 @@ fun FitnessApp() {
         composable(AppRoute.Main) {
             MainScreen(
                 username = currentUser?.username ?: "guest",
-                userId = currentUser?.id ?: 0L
+                userId = currentUser?.id ?: 0L,
+                onLogoutClick = {
+                    currentUser = null
+                    authMessage = null
+                    preferencesRepository.clearLoggedInUserId()
+                    navController.navigate(AppRoute.Login) {
+                        popUpTo(AppRoute.Main) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }
